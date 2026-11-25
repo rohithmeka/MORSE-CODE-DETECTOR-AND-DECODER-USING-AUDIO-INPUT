@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Morse Signal Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Spline+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4f6f8; --surface:#ffffff; --surface-2:#eef1f5; --grid:#d5dce4;
+    --fg:#12171e; --muted:#5a6675; --faint:#8793a3;
+    --accent:#e8821b; --teal:#0e8f86; --line:#c7d0da;
+    --good:#1a8f4a; --good-bg:#e4f4ea; --warn:#b4720a; --warn-bg:#fbf0dc; --bad:#c23b32; --bad-bg:#f8e4e2;
+    --shadow:0 1px 2px rgba(18,23,30,.06),0 8px 24px rgba(18,23,30,.06);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    --disp:"Chakra Petch",system-ui,sans-serif;
+    --body:"Spline Sans",system-ui,sans-serif;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0b0e13; --surface:#121722; --surface-2:#0f141d; --grid:#1e2733;
+    --fg:#e7edf4; --muted:#93a0b2; --faint:#5f6c7d;
+    --accent:#ffb24d; --teal:#4fd6c9; --line:#242f3d;
+    --good:#4fd17e; --good-bg:#12271a; --warn:#ffc24d; --warn-bg:#2a2112; --bad:#ff6b5e; --bad-bg:#2a1512;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark; } }
+  :root[data-theme="dark"]{
+    --bg:#0b0e13; --surface:#121722; --surface-2:#0f141d; --grid:#1e2733;
+    --fg:#e7edf4; --muted:#93a0b2; --faint:#5f6c7d;
+    --accent:#ffb24d; --teal:#4fd6c9; --line:#242f3d;
+    --good:#4fd17e; --good-bg:#12271a; --warn:#ffc24d; --warn-bg:#2a2112; --bad:#ff6b5e; --bad-bg:#2a1512;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark; }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:0}
+
+  .top-actions{display:flex;justify-content:flex-end;padding-top:14px}
+  .top-actions button{font-family:var(--mono);font-size:12px;cursor:pointer;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+  .top-actions button:hover{border-color:var(--accent);color:var(--accent)}
+
+  header{padding-block:28px 10px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:28px;height:2px;background:var(--accent)}
+  h1{font-family:var(--disp);font-weight:600;font-size:clamp(2.2rem,6.5vw,3.8rem);line-height:1.02;margin:0;letter-spacing:-.01em}
+  h1 span{color:var(--accent)}
+  .lede{max-width:62ch;color:var(--muted);font-size:1.03rem;margin:16px 0 0}
+
+  .drop{margin:24px 0 8px;border:1.5px dashed var(--line);border-radius:16px;background:var(--surface);padding:28px 24px;text-align:center;transition:border-color .15s,background .15s;box-shadow:var(--shadow)}
+  .drop.hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+  .drop h2{font-family:var(--disp);font-weight:600;font-size:1.15rem;margin:0 0 6px}
+  .drop p{margin:0 0 18px;color:var(--muted);font-size:.92rem}
+  .btn{font-family:var(--mono);font-size:13px;letter-spacing:.04em;cursor:pointer;background:var(--accent);color:#1a1206;border:none;border-radius:999px;padding:11px 22px;font-weight:500}
+  .btn.ghost{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .fname{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--teal)}
+  .err{color:var(--bad);font-family:var(--mono);font-size:12.5px;margin-top:12px}
+
+  #report[hidden]{display:none}
+
+  /* decoded hero */
+  .hero{margin:26px 0 8px;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;background:var(--surface)}
+  .hero-top{padding:26px 26px 20px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 7%,var(--surface)),var(--surface))}
+  .hero .lab{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .hero .text{font-family:var(--disp);font-weight:700;font-size:clamp(2rem,7vw,3.4rem);letter-spacing:.08em;line-height:1.1;margin:6px 0 0;word-break:break-word}
+  .hero .morse{font-family:var(--mono);font-size:clamp(.95rem,2.6vw,1.3rem);color:var(--accent);margin-top:14px;word-break:break-word;line-height:1.7}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;padding:16px 26px 20px;border-top:1px dashed var(--line)}
+  .chip{font-family:var(--mono);font-size:12px;font-weight:700;width:26px;height:26px;display:grid;place-items:center;border-radius:7px;border:1px solid var(--line)}
+  .chip.dot{color:var(--teal)} .chip.dash{color:var(--accent)}
+  .chip.sep{color:var(--faint);border-style:dashed;width:auto;padding:0 8px}
+
+  /* status banner */
+  .banner{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:14px 18px;margin:14px 0;font-size:.92rem;border:1px solid}
+  .banner .ic{font-family:var(--mono);font-weight:700;flex:0 0 auto}
+  .banner.good{background:var(--good-bg);border-color:color-mix(in srgb,var(--good) 40%,transparent);color:var(--good)}
+  .banner.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 40%,transparent);color:var(--warn)}
+  .banner.bad{background:var(--bad-bg);border-color:color-mix(in srgb,var(--bad) 45%,transparent);color:var(--bad)}
+  .banner b{font-weight:600}
+
+  /* accuracy evaluator */
+  .acc{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);margin:14px 0}
+  .acc label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .acc input{font-family:var(--mono);font-size:14px;padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);flex:1;min-width:180px}
+  .acc input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .acc .res{font-family:var(--disp);font-weight:600;font-size:1rem;margin-left:auto;white-space:nowrap}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0 8px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 15px;box-shadow:var(--shadow);min-width:0}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .tile .v{font-family:var(--disp);font-weight:600;font-size:clamp(1.4rem,3.4vw,2rem);margin-top:6px;font-variant-numeric:tabular-nums;line-height:1}
+  .tile .u{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:3px}
+
+  section{padding-block:22px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+  .sec-head h3{font-family:var(--disp);font-weight:600;font-size:1.3rem;margin:0}
+  .sec-head .no{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.1em}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+  .panel-bar{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .dotind{width:9px;height:9px;border-radius:50%;background:var(--accent);flex:0 0 auto;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .panel-bar .name{font-family:var(--disp);font-weight:600;font-size:.95rem}
+  .panel-bar .meta{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right}
+  canvas{display:block;width:100%;height:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;padding:11px 18px;font-family:var(--mono);font-size:11px;color:var(--muted);border-top:1px dashed var(--line)}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+  .groups{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .group{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px 20px;min-width:0}
+  .group h4{font-family:var(--disp);font-weight:600;font-size:.95rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .group h4::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+  .row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+  .row:last-child{border-bottom:none}
+  .row .lab{color:var(--muted)} .row .val{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
+  .row .val b{color:var(--teal);font-weight:500}
+  .rules{grid-column:1/-1;background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-wrap:wrap;gap:10px}
+  .rule{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--muted)}
+  .rule b{color:var(--accent);font-weight:500}
+
+  footer{padding-block:28px 50px;color:var(--faint);font-family:var(--mono);font-size:12px;border-top:1px solid var(--line);margin-top:18px}
+
+  @media (max-width:640px){ .tiles{grid-template-columns:repeat(2,1fr)} .groups{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+  *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Ccircle cx='9' cy='9' r='5' fill='%23e8821b' stroke='%23ffffff' stroke-width='1.5'/%3E%3C/svg%3E") 9 9, auto !important}
+  html.pressing *{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='12'%3E%3Crect x='2' y='3' width='28' height='6' rx='3' fill='%23e8821b' stroke='%23ffffff' stroke-width='1.5'/%3E%3C/svg%3E") 16 6, auto !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-actions"><button id="theme">◐ Theme</button></div>
+  <header>
+    <p class="eyebrow">Software-Defined Morse Receiver</p>
+    <h1>Morse <span>Signal&nbsp;Lab</span></h1>
+    <p class="lede">Upload a Morse <code>.wav</code> file. The receiver locks onto the tone, filters and
+      segments the signal, estimates the timing, classifies dots and dashes, and decodes the full message
+      to English text — every stage runs locally in your browser.</p>
+  </header>
+
+  <div class="drop" id="drop">
+    <h2>Drop a .wav file here</h2>
+    <p>or choose one from your device — nothing is uploaded, all processing is local.</p>
+    <div class="toolbar">
+      <button class="btn" id="pick">Choose .wav file</button>
+      <button class="btn ghost" id="demo">Decode a demo signal</button>
+    </div>
+    <input id="file" type="file" accept=".wav,audio/wav,audio/x-wav,audio/*" hidden>
+    <div class="fname" id="fname"></div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="report" hidden>
+    <!-- DECODED HERO -->
+    <div class="hero">
+      <div class="hero-top">
+        <div class="lab">Decoded message</div>
+        <div class="text" id="decoded">—</div>
+        <div class="morse" id="morse"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div id="banners"></div>
+
+    <!-- ACCURACY -->
+    <div class="acc">
+      <label for="expected">Check accuracy</label>
+      <input id="expected" type="text" placeholder="Type the known message, e.g. HELLO" autocomplete="off">
+      <div class="res" id="accres"></div>
+    </div>
+
+    <!-- TILES -->
+    <div class="tiles">
+      <div class="tile"><div class="k">Tone frequency</div><div class="v" id="t-freq">–</div></div>
+      <div class="tile"><div class="k">Sample rate</div><div class="v" id="t-sr">–</div></div>
+      <div class="tile"><div class="k">Time unit T</div><div class="v" id="t-unit">–</div></div>
+      <div class="tile"><div class="k">Speed</div><div class="v" id="t-wpm">–</div></div>
+    </div>
+
+    <!-- SIGNAL TRACES -->
+    <section>
+      <div class="sec-head"><span class="no">SIGNAL PATH</span><h3>Signal traces</h3></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind"></span><span class="name">1 · Original audio</span><span class="meta" id="m1"></span></div><canvas id="cv1" height="140"></canvas></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind"></span><span class="name">2 · Band-pass filtered signal</span><span class="meta" id="m2"></span></div><canvas id="cv2" height="140"></canvas></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind" style="background:var(--teal);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 22%,transparent)"></span><span class="name">3 · Envelope &amp; adaptive threshold</span><span class="meta" id="m3"></span></div><canvas id="cv3" height="140"></canvas>
+        <div class="legend"><span><i style="background:var(--teal)"></i>Smoothed envelope</span><span><i style="background:var(--accent)"></i>Adaptive threshold</span></div></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind"></span><span class="name">4 · Tone segmentation</span><span class="meta" id="m4"></span></div><canvas id="cv4" height="100"></canvas>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Tone</span><span>· flat = silence</span></div></div>
+    </section>
+
+    <!-- TIMING MAP -->
+    <section>
+      <div class="sec-head"><span class="no">TIMING MAP</span><h3>Durations against the thresholds</h3></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind"></span><span class="name">Tone lengths vs dot / dash boundary</span><span class="meta" id="mb1"></span></div><canvas id="cvTone" height="120"></canvas>
+        <div class="legend"><span><i style="background:var(--accent)"></i>tone length</span><span><i style="background:var(--teal)"></i>2T boundary</span></div></div>
+      <div class="panel"><div class="panel-bar"><span class="dotind"></span><span class="name">Gap lengths vs character / word boundaries</span><span class="meta" id="mb2"></span></div><canvas id="cvGap" height="120"></canvas>
+        <div class="legend"><span><i style="background:var(--fg)"></i>gap length</span><span><i style="background:var(--teal)"></i>2T</span><span><i style="background:var(--accent)"></i>word boundary</span></div></div>
+    </section>
+
+    <!-- READOUT -->
+    <section>
+      <div class="sec-head"><span class="no">READOUT</span><h3>Measured values</h3></div>
+      <div class="groups" id="groups"></div>
+    </section>
+  </div>
+
+  <footer>Morse Signal Lab</footer>
+</div>
+
+<script>
+/* ============ DSP CORE — exact port of the SciPy pipeline ============ */
+/* Butterworth band-pass (butter), zero-phase filtfilt, exact-length FFT
+   (Bluestein) and Hilbert envelope — validated to ~1e-11 against SciPy. */
+function fftPow2(re,im,inv){const n=re.length;
+  for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;
+    if(i<j){const tr=re[i];re[i]=re[j];re[j]=tr;const ti=im[i];im[i]=im[j];im[j]=ti;}}
+  for(let len=2;len<=n;len<<=1){const ang=(inv?2:-2)*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<len/2;k++){
+      const ar=re[i+k],ai=im[i+k],br=re[i+k+len/2]*cr-im[i+k+len/2]*ci,bi=re[i+k+len/2]*ci+im[i+k+len/2]*cr;
+      re[i+k]=ar+br;im[i+k]=ai+bi;re[i+k+len/2]=ar-br;im[i+k+len/2]=ai-bi;
+      const ncr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=ncr;}}}
+  if(inv)for(let i=0;i<n;i++){re[i]/=n;im[i]/=n;}}
+// Bluestein: exact DFT for any length (matches numpy.fft)
+function dft(xre,xim,inv){const n=xre.length;if(n<=1)return[Float64Array.from(xre),Float64Array.from(xim)];
+  if((n&(n-1))===0){const r=Float64Array.from(xre),im=Float64Array.from(xim);fftPow2(r,im,inv);return[r,im];}
+  let m=1;while(m<2*n-1)m<<=1;
+  const are=new Float64Array(m),aim=new Float64Array(m),bre=new Float64Array(m),bim=new Float64Array(m);
+  const sign=inv?1:-1,wre=new Float64Array(n),wim=new Float64Array(n);
+  for(let k=0;k<n;k++){const ang=sign*Math.PI*((k*k)%(2*n))/n;wre[k]=Math.cos(ang);wim[k]=Math.sin(ang);}
+  for(let k=0;k<n;k++){are[k]=xre[k]*wre[k]-xim[k]*wim[k];aim[k]=xre[k]*wim[k]+xim[k]*wre[k];}
+  bre[0]=wre[0];bim[0]=-wim[0];
+  for(let k=1;k<n;k++){bre[k]=bre[m-k]=wre[k];bim[k]=bim[m-k]=-wim[k];}
+  fftPow2(are,aim,false);fftPow2(bre,bim,false);
+  for(let k=0;k<m;k++){const r=are[k]*bre[k]-aim[k]*bim[k],i=are[k]*bim[k]+aim[k]*bre[k];are[k]=r;aim[k]=i;}
+  fftPow2(are,aim,true);
+  const yre=new Float64Array(n),yim=new Float64Array(n);
+  for(let k=0;k<n;k++){yre[k]=are[k]*wre[k]-aim[k]*wim[k];yim[k]=are[k]*wim[k]+aim[k]*wre[k];}
+  if(inv)for(let k=0;k<n;k++){yre[k]/=n;yim[k]/=n;}
+  return[yre,yim];}
+function hilbertEnv(x){const n=x.length;let[Xr,Xi]=dft(Float64Array.from(x),new Float64Array(n),false);
+  const h=new Float64Array(n);if(n%2===0){h[0]=1;h[n/2]=1;for(let i=1;i<n/2;i++)h[i]=2;}else{h[0]=1;for(let i=1;i<(n+1)/2;i++)h[i]=2;}
+  for(let k=0;k<n;k++){Xr[k]*=h[k];Xi[k]*=h[k];}
+  const[ar,ai]=dft(Xr,Xi,true);const env=new Float64Array(n);for(let k=0;k<n;k++)env[k]=Math.hypot(ar[k],ai[k]);return env;}
+// Complex + Butterworth band-pass design (matches scipy.signal.butter)
+const cmul=(a,b)=>({re:a.re*b.re-a.im*b.im,im:a.re*b.im+a.im*b.re});
+const cadd=(a,b)=>({re:a.re+b.re,im:a.im+b.im});
+const csub=(a,b)=>({re:a.re-b.re,im:a.im-b.im});
+const cdiv=(a,b)=>{const d=b.re*b.re+b.im*b.im;return{re:(a.re*b.re+a.im*b.im)/d,im:(a.im*b.re-a.re*b.im)/d};};
+const csqrt=a=>{const r=Math.hypot(a.re,a.im),re=Math.sqrt((r+a.re)/2);let im=Math.sqrt((r-a.re)/2);if(a.im<0)im=-im;return{re,im};};
+function polyFromRoots(roots){let p=[{re:1,im:0}];for(const r of roots){const np=Array.from({length:p.length+1},()=>({re:0,im:0}));
+  for(let i=0;i<p.length;i++){np[i]=cadd(np[i],p[i]);np[i+1]=csub(np[i+1],cmul(p[i],r));}p=np;}return p.map(c=>c.re);}
+function butterBandpass(N,lo,hi,fs){
+  const m=[];for(let k=-N+1;k<N;k+=2)m.push(k);
+  const pproto=m.map(mk=>{const th=Math.PI*mk/(2*N);return{re:-Math.cos(th),im:-Math.sin(th)};});
+  const warped=[lo,hi].map(w=>4*Math.tan(Math.PI*(2*w/fs)/2));
+  const bw=warped[1]-warped[0],wo=Math.sqrt(warped[0]*warped[1]),degree=pproto.length;
+  const p_lp=pproto.map(p=>cmul(p,{re:bw/2,im:0})),wo2={re:wo*wo,im:0},p_bp=[];
+  for(const pl of p_lp){const d=csqrt(csub(cmul(pl,pl),wo2));p_bp.push(cadd(pl,d));}
+  for(const pl of p_lp){const d=csqrt(csub(cmul(pl,pl),wo2));p_bp.push(csub(pl,d));}
+  let z_bp=[];for(let i=0;i<degree;i++)z_bp.push({re:0,im:0});
+  const k_bp=Math.pow(bw,degree),fs2={re:4,im:0};
+  const z_z=z_bp.map(z=>cdiv(cadd(fs2,z),csub(fs2,z))),p_z=p_bp.map(p=>cdiv(cadd(fs2,p),csub(fs2,p)));
+  const deg2=p_bp.length-z_bp.length;for(let i=0;i<deg2;i++)z_z.push({re:-1,im:0});
+  let numP={re:1,im:0},denP={re:1,im:0};
+  for(const z of z_bp)numP=cmul(numP,csub(fs2,z));for(const p of p_bp)denP=cmul(denP,csub(fs2,p));
+  const k_z=k_bp*cdiv(numP,denP).re;
+  return{b:polyFromRoots(z_z).map(v=>v*k_z),a:polyFromRoots(p_z)};}
+function solveLin(A,b){const n=b.length,M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){let piv=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[piv][c]))piv=r;
+    [M[c],M[piv]]=[M[piv],M[c]];const d=M[c][c];for(let j=c;j<=n;j++)M[c][j]/=d;
+    for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c];for(let j=c;j<=n;j++)M[r][j]-=f*M[c][j];}}
+  return M.map(r=>r[n]);}
+function lfilter_zi(b,a){const n=Math.max(a.length,b.length),A=[];
+  for(let i=0;i<n-1;i++){A.push(new Array(n-1).fill(0));A[i][0]=-a[i+1];if(i+1<n-1)A[i][i+1]=1;}
+  const ImA=[];for(let i=0;i<n-1;i++){ImA.push([]);for(let j=0;j<n-1;j++)ImA[i].push((i===j?1:0)-A[i][j]);}
+  const B=[];for(let i=1;i<n;i++)B.push(b[i]-a[i]*b[0]);return solveLin(ImA,B);}
+function lfilter(b,a,x,zi){const n=Math.max(a.length,b.length),bb=[...b],aa=[...a];
+  while(bb.length<n)bb.push(0);while(aa.length<n)aa.push(0);
+  const z=zi?[...zi]:new Array(n-1).fill(0),y=new Float64Array(x.length);
+  for(let m=0;m<x.length;m++){const xm=x[m],ym=bb[0]*xm+z[0];
+    for(let i=0;i<n-2;i++)z[i]=bb[i+1]*xm+z[i+1]-aa[i+1]*ym;z[n-2]=bb[n-1]*xm-aa[n-1]*ym;y[m]=ym;}return y;}
+function oddExt(x,ne){const n=x.length,left=new Float64Array(ne),right=new Float64Array(ne);
+  for(let i=0;i<ne;i++)left[i]=2*x[0]-x[ne-i];for(let i=0;i<ne;i++)right[i]=2*x[n-1]-x[n-2-i];
+  const out=new Float64Array(ne+n+ne);out.set(left,0);out.set(x,ne);out.set(right,ne+n);return out;}
+function filtfilt(b,a,x){const ntaps=Math.max(a.length,b.length),edge=3*ntaps;
+  const ext=oddExt(x,edge),zi=lfilter_zi(b,a);
+  let y=lfilter(b,a,ext,zi.map(v=>v*ext[0]));y.reverse();
+  y=lfilter(b,a,y,zi.map(v=>v*y[0]));y.reverse();
+  return y.slice(edge,edge+x.length);}
+function convolveSame(env,ws){const N=env.length,out=new Float64Array(N),off=(ws-1)>>1;
+  for(let i=0;i<N;i++){const fi=i+off;let s=0;const jlo=Math.max(0,fi-ws+1),jhi=Math.min(N-1,fi);
+    for(let j=jlo;j<=jhi;j++)s+=env[j];out[i]=s/ws;}return out;}
+const quantile=(s,q)=>{const n=s.length;if(n===1)return s[0];const pos=(n-1)*q,lo=Math.floor(pos),hi=Math.ceil(pos);return lo===hi?s[lo]:s[lo]+(s[hi]-s[lo])*(pos-lo);};
+const median=a=>{const b=Array.from(a).sort((x,y)=>x-y),n=b.length;return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2;};
+function splitLevels(values,rt=1.8){const v=Float64Array.from(values).sort();const g=[[v[0]]];
+  for(let i=1;i<v.length;i++){if(v[i]/Math.max(v[i-1],1e-9)>rt)g.push([v[i]]);else g[g.length-1].push(v[i]);}
+  return g.map(x=>Float64Array.from(x));}
+const MORSE={".-":"A","-...":"B","-.-.":"C","-..":"D",".":"E","..-.":"F","--.":"G","....":"H","..":"I",".---":"J","-.-":"K",".-..":"L","--":"M","-.":"N","---":"O",".--.":"P","--.-":"Q",".-.":"R","...":"S","-":"T","..-":"U","...-":"V",".--":"W","-..-":"X","-.--":"Y","--..":"Z","-----":"0",".----":"1","..---":"2","...--":"3","....-":"4",".....":"5","-....":"6","--...":"7","---..":"8","----.":"9",".-.-.-":".","--..--":",","..--..":"?",".----.":"'","-.-.--":"!","-..-.":"/","-.--.":"(","-.--.-":")",".-...":"&","---...":":","-.-.-.":";","-...-":"=",".-.-.":"+","-....-":"-","..--.-":"_",".-..-.":"\"","...-..-":"$",".--.-.":"@"};
+function editDistance(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let prev=[...Array(n+1).keys()];
+  for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++){const cost=a[i-1]===b[j-1]?0:1;cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost);}prev=cur;}return prev[n];}
+
+function analyze(audioRaw,sr){
+  const R={warnings:[]};
+  let mx=0;for(const v of audioRaw)mx=Math.max(mx,Math.abs(v));
+  if(mx===0){R.error="The audio file contains no usable signal.";return R;}
+  const a=new Float64Array(audioRaw.length);for(let i=0;i<a.length;i++)a[i]=audioRaw[i]/mx;
+  if(a.length<100){R.error="Audio file is too short to analyze.";return R;}
+  R.sr=sr;R.samples=a.length;R.duration=a.length/sr;R.audio=a;
+  // 4. tone frequency (exact-length FFT, matches numpy.fft.rfft)
+  const an=Math.min(a.length,Math.max(1,Math.floor(sr*10)));let mn=0;for(let i=0;i<an;i++)mn+=a[i];mn/=an;
+  const win=new Float64Array(an);for(let i=0;i<an;i++){const w=0.5-0.5*Math.cos(2*Math.PI*i/(an-1));win[i]=(a[i]-mn)*w;}
+  const [Xr,Xi]=dft(win,new Float64Array(an),false);const half=Math.floor(an/2)+1;
+  const minF=100,maxF=Math.min(5000,0.45*sr);let best=-1,bi=0;const mags=[];
+  for(let k=0;k<half;k++){const f=k*sr/an;if(f<minF||f>maxF)continue;const m=Math.hypot(Xr[k],Xi[k]);mags.push([f,m]);if(m>best){best=m;bi=k;}}
+  if(best<0){R.error="No usable frequency range was found.";return R;}
+  R.dom=bi*sr/an;const med=median(mags.map(x=>x[1]));R.toneStrengthRatio=med>0?best/med:Infinity;
+  if(R.toneStrengthRatio<5)R.warnings.push("Weak or noisy tone — frequency detection may be unreliable.");
+  if(mags.some(([f,m])=>Math.abs(f-R.dom)>300&&m>=0.7*best))R.warnings.push("Another strong tone is present; the detected frequency may not be the Morse tone.");
+  if(R.dom>0.40*sr)R.warnings.push("The tone is close to the Nyquist limit (sample rate is low); dot/dash timing may be unreliable.");
+  // 5. frequency-adaptive Butterworth band-pass (4th order, zero-phase filtfilt)
+  let lo=Math.max(50,R.dom-250),hi=Math.min(0.45*sr,R.dom+250);
+  if(hi<=lo){lo=Math.max(20,R.dom*0.5);hi=Math.min(0.45*sr,R.dom*1.5);}
+  if(hi<=lo){R.error="Could not create a valid band-pass range.";return R;}
+  R.lo=lo;R.hi=hi;
+  const {b:bCoef,a:aCoef}=butterBandpass(4,lo,hi,sr);
+  const filtered=filtfilt(bCoef,aCoef,a);R.filtered=filtered;
+  // 6. Hilbert envelope
+  const env=hilbertEnv(filtered);
+  // 7. smooth (np.convolve moving-average, mode="same")
+  let ws=Math.max(3,Math.round(0.010*sr));if(ws%2===0)ws++;
+  const sm=convolveSame(env,ws);
+  R.env=sm;
+  // 8. threshold
+  const srt=Array.from(sm).sort((x,y)=>x-y);const q10=quantile(srt,.1),q50=quantile(srt,.5),q90=quantile(srt,.9);
+  R.noise=q10+0.5*(q50-q10);R.signal=q90;R.thr=R.noise+0.30*(R.signal-R.noise);
+  // 9-14. segmentation
+  const mask=new Uint8Array(a.length);for(let i=0;i<a.length;i++)mask[i]=sm[i]>R.thr?1:0;
+  const runs=m=>{const s=[],e=[];let p=0;for(let i=0;i<m.length;i++){if(m[i]&&!p)s.push(i);if(!m[i]&&p)e.push(i);p=m[i];}if(p)e.push(m.length);return[s,e];};
+  const mnT=Math.max(1,Math.round(0.015*sr)),mnG=Math.max(1,Math.round(0.015*sr));
+  let [s,e]=runs(mask);for(let i=0;i<s.length;i++)if(e[i]-s[i]<mnT)for(let j=s[i];j<e[i];j++)mask[j]=0;
+  const inv=new Uint8Array(a.length);for(let i=0;i<a.length;i++)inv[i]=mask[i]?0:1;let[gs,ge]=runs(inv);
+  for(let i=0;i<gs.length;i++)if((ge[i]-gs[i])<mnG&&gs[i]>0&&ge[i]<mask.length)for(let j=gs[i];j<ge[i];j++)mask[j]=1;
+  [s,e]=runs(mask);R.mask=mask;
+  const tones=s.map((v,i)=>(e[i]-s[i])/sr*1000);const gaps=[];for(let i=1;i<s.length;i++)gaps.push((s[i]-e[i-1])/sr*1000);
+  if(tones.length===0){R.error="No Morse tones were detected. Try another file.";return R;}
+  R.tones=tones;R.gaps=gaps;
+  // 15. T estimation (multi-cue)
+  const tg=splitLevels(tones);const dotC=median(tg[0]);const dashC=tg.length>=2?median(tg[tg.length-1]):null;
+  let ue=[],base=dotC;
+  if(dashC!==null&&dashC>=2*dotC){ue=[dotC,dashC/3];base=dotC;}
+  if(gaps.length>0){const gc=splitLevels(gaps).map(g=>median(g));if(ue.length===0){base=gc[0];ue.push(gc[0]);}
+    for(const c of gc){const nearest=[1,3,7].reduce((p,k)=>Math.abs(c/base-k)<Math.abs(c/base-p)?k:p);ue.push(c/nearest);}}
+  if(ue.length===0)ue.push(dotC);
+  R.T=median(ue);if(!isFinite(R.T)||R.T<=0){R.error="Could not estimate the Morse timing unit.";return R;}
+  R.wpm=1200/R.T;R.dotC=dotC;R.dashC=dashC;R.nToneLevels=tg.length;
+  // 16. dynamic thresholds
+  R.dotDash=2*R.T;R.sameChar=2*R.T;
+  if(gaps.length>0){const hg=gaps.filter(g=>g>=R.sameChar);if(hg.length>0){const hgr=splitLevels(hg);
+    R.charWord=hgr.length>=2?(median(hgr[0])+median(hgr[hgr.length-1]))/2:Infinity;}else R.charWord=Infinity;}else R.charWord=Infinity;
+  R.idealDot=R.T;R.idealDash=3*R.T;R.idealElem=R.T;R.idealChar=3*R.T;R.idealWord=7*R.T;
+  // 17-18. classify + sequence
+  const sym=tones.map(d=>d<R.dotDash?".":"-");R.toneSymbols=sym;
+  let seq=sym[0];for(let i=0;i<gaps.length;i++){const g=gaps[i];
+    if(g<R.sameChar)seq+=sym[i+1];else if(g<R.charWord)seq+=" "+sym[i+1];else seq+=" / "+sym[i+1];}
+  R.morseSequence=seq;
+  // 20. decode
+  R.decodedText=seq.split(" / ").map(w=>w.split(" ").filter(x=>x).map(x=>MORSE[x]||"?").join("")).join(" ");
+  // 19. regularity + structure
+  let elemC=NaN,charC=NaN,wordC=NaN;
+  if(gaps.length>0){const eg=gaps.filter(g=>g<R.sameChar);let cg,wg;
+    if(isFinite(R.charWord)){cg=gaps.filter(g=>g>=R.sameChar&&g<R.charWord);wg=gaps.filter(g=>g>=R.charWord);}
+    else{cg=gaps.filter(g=>g>=R.sameChar);wg=[];}
+    elemC=eg.length?median(eg):NaN;charC=cg.length?median(cg):NaN;wordC=wg.length?median(wg):NaN;}
+  const rd=[];
+  for(const d of tones){const c=(dashC!==null&&d>=R.dotDash)?dashC:dotC;if(c>0)rd.push(Math.abs(d-c)/c);}
+  for(const g of gaps){let c;if(g<R.sameChar)c=elemC;else if(!isFinite(R.charWord)||g<R.charWord)c=charC;else c=wordC;if(isFinite(c)&&c>0)rd.push(Math.abs(g-c)/c);}
+  R.overallDev=rd.length?rd.reduce((a,b)=>a+b,0)/rd.length:1;
+  R.timingFitScore=Math.max(0,100-R.overallDev*100);
+  R.timingRegularity=R.timingFitScore>=75?"REGULAR":R.timingFitScore>=50?"MODERATE":"IRREGULAR";
+  R.dotDashRatio=(dashC!==null&&dotC>0)?dashC/dotC:NaN;
+  R.standardStructure=(tg.length>=2)&&(R.dotDashRatio>=2&&R.dotDashRatio<=4.5);
+  R.scoreAssessed=R.standardStructure||tones.length<5;
+  R.structureWarning=(!R.standardStructure)&&tones.length>=5;
+  R.ok=true;return R;
+}
+
+/* ============ RENDER ============ */
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function fit(cv){const dpr=Math.min(window.devicePixelRatio||1,2);const w=cv.clientWidth,h=+cv.getAttribute('height');
+  cv.width=w*dpr;cv.height=h*dpr;const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return{c,w,h};}
+function grid(c,w,h){c.strokeStyle=css('--grid');c.lineWidth=1;
+  for(let x=0;x<=w;x+=w/8){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();}
+  for(let y=0;y<=h;y+=h/4){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}}
+function drawWave(id,data,color){const cv=document.getElementById(id),{c,w,h}=fit(cv),mid=h/2;grid(c,w,h);
+  let mx=1e-9;for(const v of data)mx=Math.max(mx,Math.abs(v));c.strokeStyle=css(color);c.lineWidth=1;c.beginPath();
+  const n=data.length,step=n/w;for(let x=0;x<w;x++){let lo=Infinity,hi=-Infinity;const a=Math.floor(x*step),b=Math.min(n,Math.floor((x+1)*step));
+    for(let i=a;i<b;i++){if(data[i]<lo)lo=data[i];if(data[i]>hi)hi=data[i];}if(lo===Infinity){lo=hi=0;}
+    c.moveTo(x,mid-hi/mx*mid*0.9);c.lineTo(x,mid-lo/mx*mid*0.9);}c.stroke();}
+function drawEnv(id,env,thr){const cv=document.getElementById(id),{c,w,h}=fit(cv),pad=12,base=h-pad,top=pad,span=base-top;grid(c,w,h);
+  let mx=1e-9;for(const v of env)mx=Math.max(mx,v);const n=env.length,step=n/w;
+  c.strokeStyle=css('--teal');c.lineWidth=1.6;c.beginPath();
+  for(let x=0;x<w;x++){let hi=0;const a=Math.floor(x*step),b=Math.min(n,Math.floor((x+1)*step));for(let i=a;i<b;i++)if(env[i]>hi)hi=env[i];
+    const y=base-hi/mx*span;x?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();
+  const ty=base-(thr/mx)*span;c.strokeStyle=css('--accent');c.lineWidth=1.4;c.setLineDash([6,5]);c.beginPath();c.moveTo(0,ty);c.lineTo(w,ty);c.stroke();c.setLineDash([]);}
+function drawMask(id,mask){const cv=document.getElementById(id),{c,w,h}=fit(cv),hi=h*0.28,lo=h*0.76;grid(c,w,h);
+  const n=mask.length,step=n/w;c.strokeStyle=css('--accent');c.lineWidth=2;c.beginPath();c.moveTo(0,mask[0]?hi:lo);
+  for(let x=0;x<w;x++){let on=0;const a=Math.floor(x*step),b=Math.min(n,Math.floor((x+1)*step));for(let i=a;i<b;i++)if(mask[i]){on=1;break;}c.lineTo(x,on?hi:lo);}c.stroke();}
+function drawBars(id,vals,color,lines){const cv=document.getElementById(id),{c,w,h}=fit(cv),pad=16,base=h-pad,top=pad,span=base-top;grid(c,w,h);
+  let mx=0;vals.forEach(v=>mx=Math.max(mx,v));lines.forEach(l=>{if(isFinite(l.ms))mx=Math.max(mx,l.ms);});mx*=1.12;if(mx<=0)mx=1;
+  const n=vals.length,slot=w/Math.max(n,1),bw=Math.min(slot*0.62,28);c.fillStyle=css(color);
+  vals.forEach((v,i)=>{const x=i*slot+(slot-bw)/2,bh=v/mx*span,y=base-bh;c.fillRect(x,y,bw,bh);});
+  lines.forEach(l=>{if(!isFinite(l.ms))return;const y=base-l.ms/mx*span;c.strokeStyle=css(l.color);c.lineWidth=1.4;c.setLineDash([6,5]);
+    c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();c.setLineDash([]);c.fillStyle=css(l.color);c.font='10px JetBrains Mono, monospace';c.textAlign='left';c.fillText(l.label,5,Math.max(10,y-4));});}
+
+let LAST=null;
+function render(R){
+  LAST=R;
+  document.getElementById('report').hidden=false;
+  document.getElementById('err').textContent='';
+
+  // hero
+  document.getElementById('decoded').textContent=R.decodedText||'—';
+  document.getElementById('morse').textContent=R.morseSequence||'';
+  const chips=document.getElementById('chips');chips.innerHTML='';
+  R.morseSequence.split('').forEach(ch=>{
+    if(ch==='.'){const d=document.createElement('span');d.className='chip dot';d.textContent='•';chips.appendChild(d);}
+    else if(ch==='-'){const d=document.createElement('span');d.className='chip dash';d.textContent='—';chips.appendChild(d);}
+    else if(ch==='/'){const d=document.createElement('span');d.className='chip sep';d.textContent='word';chips.appendChild(d);}
+  });
+
+  // banners
+  const b=document.getElementById('banners');b.innerHTML='';
+  const addBanner=(cls,ic,html)=>{const d=document.createElement('div');d.className='banner '+cls;d.innerHTML='<span class="ic">'+ic+'</span><div>'+html+'</div>';b.appendChild(d);};
+  if(R.structureWarning){
+    addBanner('bad','!','<b>Not standard Morse.</b> This signal lacks the two-tone (dot/dash ~1:3) structure — it may be a non-standard encoding or the sample rate is too low. The decoded text above is <b>unreliable</b>.');
+  } else {
+    const cls=R.timingRegularity==='REGULAR'?'good':R.timingRegularity==='MODERATE'?'warn':'bad';
+    const sc=R.scoreAssessed?('Timing fit '+R.timingFitScore.toFixed(0)+'% — keying is <b>'+R.timingRegularity+'</b> (regularity, not decode accuracy).'):'Timing not assessed.';
+    addBanner(cls, cls==='good'?'✓':'~', sc);
+  }
+  R.warnings.forEach(w=>addBanner('warn','!',w));
+
+  // accuracy (re-evaluate current input)
+  evalAccuracy();
+
+  // tiles
+  document.getElementById('t-freq').innerHTML=R.dom.toFixed(0)+'<span class="u">Hz</span>';
+  document.getElementById('t-sr').innerHTML=R.sr+'<span class="u">Hz</span>';
+  document.getElementById('t-unit').innerHTML=R.T.toFixed(1)+'<span class="u">ms</span>';
+  document.getElementById('t-wpm').innerHTML=R.wpm.toFixed(1)+'<span class="u">WPM</span>';
+  document.getElementById('m1').textContent=R.samples+' samples · '+R.duration.toFixed(2)+' s';
+  document.getElementById('m2').textContent=R.lo.toFixed(0)+'–'+R.hi.toFixed(0)+' Hz';
+  document.getElementById('m3').textContent='threshold '+R.thr.toFixed(3);
+  document.getElementById('m4').textContent=R.tones.length+' tones';
+  document.getElementById('mb1').textContent=R.tones.length+' tones';
+  document.getElementById('mb2').textContent=R.gaps.length+' gaps';
+  drawAll();
+
+  // readout groups
+  const r2=x=>x.toFixed(2);
+  const cw=isFinite(R.charWord)?r2(R.charWord)+' ms':'none (no word gaps)';
+  const grp=(t,rows)=>`<div class="group"><h4>${t}</h4>${rows.map(r=>`<div class="row"><span class="lab">${r[0]}</span><span class="val">${r[1]}</span></div>`).join('')}</div>`;
+  const struct=R.scoreAssessed?(R.timingFitScore.toFixed(0)+'% · '+R.timingRegularity):'Not assessed';
+  document.getElementById('groups').innerHTML =
+    grp('Acquisition',[['Sample rate',R.sr+' Hz'],['Samples',R.samples],['Duration',R.duration.toFixed(3)+' s'],['Channels','1 (Mono)']])
+   +grp('Tone &amp; filter',[['Detected tone','<b>'+r2(R.dom)+'</b> Hz'],['Strength ratio',r2(R.toneStrengthRatio)],['Filter range',r2(R.lo)+' – '+r2(R.hi)+' Hz']])
+   +grp('Amplitude',[['Signal level',R.signal.toFixed(5)],['Noise level',R.noise.toFixed(5)],['Threshold','<b>'+R.thr.toFixed(5)+'</b>']])
+   +grp('Segmentation &amp; speed',[['Tone segments','<b>'+R.tones.length+'</b>'],['Gaps',R.gaps.length],['Time unit T','<b>'+r2(R.T)+'</b> ms'],['Speed',r2(R.wpm)+' WPM']])
+   +grp('Ideal timing',[['Dot (1T)',r2(R.idealDot)+' ms'],['Dash (3T)',r2(R.idealDash)+' ms'],['Element gap (1T)',r2(R.idealElem)+' ms'],['Character gap (3T)',r2(R.idealChar)+' ms'],['Word gap (7T)',r2(R.idealWord)+' ms']])
+   +grp('Decision boundaries',[['Dot / Dash (2T)','<b>'+r2(R.dotDash)+'</b> ms'],['Same-char max (2T)',r2(R.sameChar)+' ms'],['Char / Word','<b>'+cw+'</b>']])
+   +grp('Validation',[['Tone-length levels',R.nToneLevels+(isFinite(R.dotDashRatio)?' (ratio '+r2(R.dotDashRatio)+')':' (single)')],['Timing fit',struct],['Standard Morse',R.standardStructure?'yes':'no']])
+   +`<div class="rules">
+       <span class="rule">tone &lt; <b>${r2(R.dotDash)}</b> ms → dot</span>
+       <span class="rule">tone ≥ <b>${r2(R.dotDash)}</b> ms → dash</span>
+       <span class="rule">gap &lt; <b>${r2(R.sameChar)}</b> ms → same character</span>
+       ${isFinite(R.charWord)?`<span class="rule">gap <b>${r2(R.sameChar)}–${r2(R.charWord)}</b> ms → new character</span><span class="rule">gap ≥ <b>${r2(R.charWord)}</b> ms → new word</span>`:`<span class="rule">gap ≥ <b>${r2(R.sameChar)}</b> ms → new character (no word gaps)</span>`}
+     </div>`;
+}
+function drawAll(){ if(!LAST)return;
+  drawWave('cv1',LAST.audio,'--accent');
+  drawWave('cv2',LAST.filtered,'--fg');
+  drawEnv('cv3',LAST.env,LAST.thr);
+  drawMask('cv4',LAST.mask);
+  drawBars('cvTone',LAST.tones,'--accent',[{ms:LAST.dotDash,label:'2T · '+LAST.dotDash.toFixed(0)+' ms',color:'--teal'}]);
+  drawBars('cvGap',LAST.gaps,'--fg',[{ms:LAST.sameChar,label:'2T',color:'--teal'},{ms:LAST.charWord,label:'word · '+(isFinite(LAST.charWord)?LAST.charWord.toFixed(0)+' ms':'n/a'),color:'--accent'}]);
+}
+
+/* accuracy evaluator (section 21) */
+function evalAccuracy(){
+  const out=document.getElementById('accres');
+  if(!LAST||!LAST.decodedText){out.textContent='';return;}
+  const exp=document.getElementById('expected').value.trim().toUpperCase();
+  if(!exp){out.textContent='';return;}
+  const dist=editDistance(exp,LAST.decodedText);
+  const acc=Math.max(0,(1-dist/Math.max(1,exp.length))*100);
+  const match=exp===LAST.decodedText;
+  const col=acc>=99?'--good':acc>=70?'--warn':'--bad';
+  out.innerHTML=`<span style="color:var(${col})">${acc.toFixed(0)}% · ${match?'exact match':'no match'}</span>`;
+}
+document.getElementById('expected').addEventListener('input',evalAccuracy);
+
+/* ============ FILE HANDLING ============ */
+function parseWav(buf){
+  const dv=new DataView(buf);const txt=o=>String.fromCharCode(dv.getUint8(o),dv.getUint8(o+1),dv.getUint8(o+2),dv.getUint8(o+3));
+  if(txt(0)!=='RIFF'||txt(8)!=='WAVE')throw 0;
+  let p=12,fmt,numCh,sr,bits,dataOff,dataLen;
+  while(p+8<=dv.byteLength){const id=txt(p),sz=dv.getUint32(p+4,true),body=p+8;
+    if(id==='fmt '){fmt=dv.getUint16(body,true);numCh=dv.getUint16(body+2,true);sr=dv.getUint32(body+4,true);bits=dv.getUint16(body+14,true);}
+    else if(id==='data'){dataOff=body;dataLen=sz;}p=body+sz+(sz&1);}
+  if(dataOff==null)throw 0;
+  const n=Math.floor(dataLen/(bits/8)/numCh),out=new Float64Array(n);
+  for(let i=0;i<n;i++){let s=0;for(let c=0;c<numCh;c++){const off=dataOff+(i*numCh+c)*(bits/8);let v;
+    if(fmt===3&&bits===32)v=dv.getFloat32(off,true);else if(bits===16)v=dv.getInt16(off,true)/32768;
+    else if(bits===32)v=dv.getInt32(off,true)/2147483648;else if(bits===8)v=(dv.getUint8(off)-128)/128;else throw 0;s+=v;}out[i]=s/numCh;}
+  return {audio:out,sr};
+}
+async function handleFile(file){
+  const err=document.getElementById('err');err.textContent='';
+  document.getElementById('fname').textContent='▸ '+file.name;
+  try{
+    const buf=await file.arrayBuffer();let audio,sr;
+    try{({audio,sr}=parseWav(buf));}
+    catch(_){const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();const ab=await ctx.decodeAudioData(buf.slice(0));
+      sr=ab.sampleRate;const n=ab.length,ch=ab.numberOfChannels;audio=new Float64Array(n);
+      for(let c=0;c<ch;c++){const d=ab.getChannelData(c);for(let i=0;i<n;i++)audio[i]+=d[i]/ch;}}
+    const R=analyze(audio,sr);
+    if(!R.ok){err.textContent='ERROR: '+R.error;return;}
+    render(R);document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){err.textContent='ERROR: could not read this file. Use a standard PCM .wav.';}
+}
+function demo(){
+  const sr=8000,dot=0.06,f=600;
+  const M={H:'....',E:'.',L:'.-..',O:'---',W:'.--',R:'.-.',D:'-..'};
+  const msg='HELLO WORLD';const seq=[];const push=(on,d)=>seq.push([on,Math.round(d*sr)]);
+  push(0,0.3);
+  msg.split(' ').forEach((word,wi)=>{word.split('').forEach((ch,ci)=>{M[ch].split('').forEach((el,ei)=>{push(1,el==='.'?dot:3*dot);if(ei<M[ch].length-1)push(0,dot);});if(ci<word.length-1)push(0,3*dot);});if(wi<msg.split(' ').length-1)push(0,7*dot);});
+  push(0,0.3);
+  const tot=seq.reduce((a,s)=>a+s[1],0);const audio=new Float64Array(tot);let t=0;
+  for(const [on,len] of seq){for(let i=0;i<len;i++)audio[t+i]=(on?0.9*Math.sin(2*Math.PI*f*(t+i)/sr):0)+0.02*(Math.random()*2-1);t+=len;}
+  document.getElementById('fname').textContent='▸ demo_signal.wav (HELLO WORLD, synthesized)';
+  const R=analyze(audio,sr);if(R.ok){render(R);document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'});}
+}
+
+/* wiring */
+const fileInput=document.getElementById('file');
+document.getElementById('pick').onclick=()=>fileInput.click();
+fileInput.onchange=e=>{if(e.target.files[0])handleFile(e.target.files[0]);};
+document.getElementById('demo').onclick=demo;
+const drop=document.getElementById('drop');
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+document.getElementById('theme').onclick=()=>{const cur=document.documentElement.getAttribute('data-theme');
+  const dark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+  document.documentElement.setAttribute('data-theme',dark?'light':'dark');requestAnimationFrame(drawAll);};
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>requestAnimationFrame(drawAll));
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(drawAll,120);});
+const press=()=>document.documentElement.classList.add('pressing');
+const release=()=>document.documentElement.classList.remove('pressing');
+addEventListener('mousedown',press);addEventListener('mouseup',release);addEventListener('blur',release);document.addEventListener('mouseleave',release);
+</script>
+</body>
+</html>
